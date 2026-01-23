@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Heart, PawPrint, Calendar, Stethoscope, Shield, MessageCircle, ArrowRight } from 'lucide-react';
+import heroPetsImage from '@/assets/hero-pets.jpg';
 
 const Landing = () => {
   return (
@@ -27,32 +28,41 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4">
-        <div className="container mx-auto text-center max-w-4xl">
-          <div className="animate-slide-up">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-full text-sm font-medium mb-6">
-              <PawPrint className="h-4 w-4" />
-              Your Pet's Health, Simplified
-            </span>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Complete Pet Healthcare
-              <br />
-              <span className="text-primary">Management Platform</span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Connect with veterinarians, track health records, schedule appointments, and give your pets the care they deserve — all in one place.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register">
-                <Button variant="hero" size="xl" className="group">
-                  Start Free Today
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="outline" size="xl">
-                  Sign In
-                </Button>
-              </Link>
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left animate-slide-up">
+              <span className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-full text-sm font-medium mb-6">
+                <PawPrint className="h-4 w-4" />
+                Your Pet's Health, Simplified
+              </span>
+              <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+                Complete Pet Healthcare
+                <br />
+                <span className="text-primary">Management Platform</span>
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
+                Connect with veterinarians, track health records, schedule appointments, and give your pets the care they deserve — all in one place.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <Link to="/register">
+                  <Button variant="hero" size="xl" className="group">
+                    Start Free Today
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button variant="outline" size="xl">
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <div className="animate-slide-up">
+              <img 
+                src={heroPetsImage} 
+                alt="Happy dog and cat together" 
+                className="w-full h-auto rounded-2xl shadow-hover object-cover"
+              />
             </div>
           </div>
         </div>
