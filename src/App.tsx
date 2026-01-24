@@ -35,6 +35,14 @@ import VetAvailability from "./pages/vet/VetAvailability";
 
 // Admin Dashboard
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminHome from "./pages/admin/AdminHome";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminVeterinarians from "./pages/admin/AdminVeterinarians";
+import AdminPets from "./pages/admin/AdminPets";
+import AdminAppointments from "./pages/admin/AdminAppointments";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -76,7 +84,16 @@ const App = () => (
           </Route>
 
           {/* Admin Dashboard */}
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />}>
+            <Route index element={<AdminHome />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="veterinarians" element={<AdminVeterinarians />} />
+            <Route path="pets" element={<AdminPets />} />
+            <Route path="appointments" element={<AdminAppointments />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
 
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
