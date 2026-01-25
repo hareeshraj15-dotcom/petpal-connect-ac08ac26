@@ -1,63 +1,76 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api, UserRole } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Heart, PawPrint, Stethoscope, Shield } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn, user, role, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('PET_OWNER');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user && role) {
+      switch (role) {
+        case 'veterinarian':
+          navigate('/vet-dashboard');
+          break;
+        case 'admin':
+          navigate('/admin-dashboard');
+          break;
+        default:
+          navigate('/dashboard');
+      }
+    }
+  }, [user, role, loading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data
+    const validation = loginSchema.safeParse({ email, password });
+    
+    if (!validation.success) {
+      const errors = validation.error.errors;
+      toast.error(errors[0].message);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const user = await api.login(email, password, role);
+      const { error } = await signIn(email, password);
       
-      if (user) {
-        toast.success(`Welcome back, ${user.name}!`);
-        
-        // Role-based redirect
-        switch (user.role) {
-          case 'PET_OWNER':
-            navigate('/dashboard');
-            break;
-          case 'VETERINARIAN':
-            navigate('/vet-dashboard');
-            break;
-          case 'ADMIN':
-            navigate('/admin-dashboard');
-            break;
-          default:
-            navigate('/dashboard');
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password. Please try again.');
+        } else if (error.message.includes('Email not confirmed')) {
+          toast.error('Please verify your email before signing in.');
+          navigate('/verify-email');
+        } else {
+          toast.error(error.message);
         }
       } else {
-        toast.error('Invalid credentials. Please try again.');
+        toast.success('Welcome back!');
+        // Redirect will happen via useEffect when user/role updates
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getRoleIcon = (selectedRole: UserRole) => {
-    switch (selectedRole) {
-      case 'PET_OWNER':
-        return <PawPrint className="h-5 w-5" />;
-      case 'VETERINARIAN':
-        return <Stethoscope className="h-5 w-5" />;
-      case 'ADMIN':
-        return <Shield className="h-5 w-5" />;
     }
   };
 
@@ -111,38 +124,6 @@ const Login = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="role">Login as</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                  <SelectTrigger className="h-11">
-                    <div className="flex items-center gap-2">
-                      {getRoleIcon(role)}
-                      <SelectValue placeholder="Select your role" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PET_OWNER">
-                      <div className="flex items-center gap-2">
-                        <PawPrint className="h-4 w-4" />
-                        Pet Owner
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="VETERINARIAN">
-                      <div className="flex items-center gap-2">
-                        <Stethoscope className="h-4 w-4" />
-                        Veterinarian
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="ADMIN">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Administrator
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <Button 
                 type="submit" 
                 variant="hero" 
@@ -159,13 +140,6 @@ const Login = () => {
                   Register here
                 </Link>
               </p>
-
-              {/* Demo credentials hint */}
-              <div className="mt-4 p-3 bg-accent rounded-lg">
-                <p className="text-xs text-accent-foreground text-center">
-                  <strong>Demo:</strong> Use any email with password "demo123"
-                </p>
-              </div>
             </form>
           </CardContent>
         </Card>
