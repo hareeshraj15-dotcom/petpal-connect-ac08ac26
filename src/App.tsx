@@ -2,13 +2,18 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 // Pages
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
+
+// Auth Pages
+import AuthCallback from "./pages/auth/AuthCallback";
+import VerifyEmail from "./pages/auth/VerifyEmail";
 
 // Pet Owner Dashboard
 import PetOwnerDashboard from "./pages/PetOwnerDashboard";
@@ -52,52 +57,56 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+        <AuthProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
-          {/* Pet Owner Dashboard */}
-          <Route path="/dashboard" element={<PetOwnerDashboard />}>
-            <Route index element={<DashboardHome />} />
-            <Route path="my-pets" element={<MyPets />} />
-            <Route path="health-records" element={<HealthRecords />} />
-            <Route path="appointments" element={<Appointments />} />
-            <Route path="marketplace" element={<Marketplace />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
+            {/* Pet Owner Dashboard */}
+            <Route path="/dashboard" element={<PetOwnerDashboard />}>
+              <Route index element={<DashboardHome />} />
+              <Route path="my-pets" element={<MyPets />} />
+              <Route path="health-records" element={<HealthRecords />} />
+              <Route path="appointments" element={<Appointments />} />
+              <Route path="marketplace" element={<Marketplace />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="messages" element={<Messages />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
 
-          {/* Veterinarian Dashboard */}
-          <Route path="/vet-dashboard" element={<VetDashboard />}>
-            <Route index element={<VetHome />} />
-            <Route path="appointments" element={<VetAppointments />} />
-            <Route path="consultations" element={<VetConsultations />} />
-            <Route path="pet-records" element={<VetPetRecords />} />
-            <Route path="prescriptions" element={<VetPrescriptions />} />
-            <Route path="messages" element={<VetMessages />} />
-            <Route path="profile" element={<VetProfile />} />
-            <Route path="availability" element={<VetAvailability />} />
-          </Route>
+            {/* Veterinarian Dashboard */}
+            <Route path="/vet-dashboard" element={<VetDashboard />}>
+              <Route index element={<VetHome />} />
+              <Route path="appointments" element={<VetAppointments />} />
+              <Route path="consultations" element={<VetConsultations />} />
+              <Route path="pet-records" element={<VetPetRecords />} />
+              <Route path="prescriptions" element={<VetPrescriptions />} />
+              <Route path="messages" element={<VetMessages />} />
+              <Route path="profile" element={<VetProfile />} />
+              <Route path="availability" element={<VetAvailability />} />
+            </Route>
 
-          {/* Admin Dashboard */}
-          <Route path="/admin-dashboard" element={<AdminDashboard />}>
-            <Route index element={<AdminHome />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="veterinarians" element={<AdminVeterinarians />} />
-            <Route path="pets" element={<AdminPets />} />
-            <Route path="appointments" element={<AdminAppointments />} />
-            <Route path="analytics" element={<AdminAnalytics />} />
-            <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="settings" element={<AdminSettings />} />
-          </Route>
+            {/* Admin Dashboard */}
+            <Route path="/admin-dashboard" element={<AdminDashboard />}>
+              <Route index element={<AdminHome />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="veterinarians" element={<AdminVeterinarians />} />
+              <Route path="pets" element={<AdminPets />} />
+              <Route path="appointments" element={<AdminAppointments />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="notifications" element={<AdminNotifications />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
 
-          {/* Catch-all */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

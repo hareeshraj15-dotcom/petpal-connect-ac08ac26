@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api, UserRole } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,67 +8,83 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Heart, PawPrint, Stethoscope, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+type AppRole = 'pet_owner' | 'veterinarian' | 'admin';
+
+const registerSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
+  email: z.string().trim().email('Please enter a valid email address').max(255, 'Email must be less than 255 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(72, 'Password must be less than 72 characters'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
 
 const Register = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('PET_OWNER');
+  const [role, setRole] = useState<AppRole>('pet_owner');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    // Validate form data
+    const validation = registerSchema.safeParse({ name, email, password, confirmPassword });
+    
+    if (!validation.success) {
+      const errors = validation.error.errors;
+      toast.error(errors[0].message);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // For demo, we'll just log them in
-      const user = await api.login(email, 'demo123', role);
+      const { error } = await signUp(email, password, name, role);
       
-      if (user) {
-        toast.success('Account created successfully!');
-        
-        switch (user.role) {
-          case 'PET_OWNER':
-            navigate('/dashboard');
-            break;
-          case 'VETERINARIAN':
-            navigate('/vet-dashboard');
-            break;
-          case 'ADMIN':
-            navigate('/admin-dashboard');
-            break;
-          default:
-            navigate('/dashboard');
+      if (error) {
+        if (error.message.includes('already registered') || error.message.includes('already exists')) {
+          toast.error('An account with this email already exists. Please sign in instead.');
+        } else {
+          toast.error(error.message);
         }
+      } else {
+        toast.success('Account created! Please check your email to verify your account.');
+        navigate('/verify-email');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getRoleIcon = (selectedRole: UserRole) => {
+  const getRoleIcon = (selectedRole: AppRole) => {
     switch (selectedRole) {
-      case 'PET_OWNER':
+      case 'pet_owner':
         return <PawPrint className="h-5 w-5" />;
-      case 'VETERINARIAN':
+      case 'veterinarian':
         return <Stethoscope className="h-5 w-5" />;
-      case 'ADMIN':
+      case 'admin':
         return <Shield className="h-5 w-5" />;
+    }
+  };
+
+  const getRoleLabel = (selectedRole: AppRole) => {
+    switch (selectedRole) {
+      case 'pet_owner':
+        return 'Pet Owner';
+      case 'veterinarian':
+        return 'Veterinarian';
+      case 'admin':
+        return 'Administrator';
     }
   };
 
@@ -127,7 +143,7 @@ const Register = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Create a password"
+                  placeholder="Create a password (min. 6 characters)"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -150,27 +166,27 @@ const Register = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="role">Register as</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                <Select value={role} onValueChange={(value) => setRole(value as AppRole)}>
                   <SelectTrigger className="h-11">
                     <div className="flex items-center gap-2">
                       {getRoleIcon(role)}
-                      <SelectValue placeholder="Select your role" />
+                      <SelectValue placeholder="Select your role">{getRoleLabel(role)}</SelectValue>
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PET_OWNER">
+                    <SelectItem value="pet_owner">
                       <div className="flex items-center gap-2">
                         <PawPrint className="h-4 w-4" />
                         Pet Owner
                       </div>
                     </SelectItem>
-                    <SelectItem value="VETERINARIAN">
+                    <SelectItem value="veterinarian">
                       <div className="flex items-center gap-2">
                         <Stethoscope className="h-4 w-4" />
                         Veterinarian
                       </div>
                     </SelectItem>
-                    <SelectItem value="ADMIN">
+                    <SelectItem value="admin">
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4" />
                         Administrator
