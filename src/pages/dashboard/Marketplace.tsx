@@ -1,233 +1,205 @@
-import { useState } from 'react';
-import { ShoppingBag, Package, ShoppingCart, Minus, Plus, X, CreditCard } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useRazorpay } from '@/hooks/useRazorpay';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/use-toast';
+import { Search, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ProductCard from '@/components/marketplace/ProductCard';
+import CartSheet from '@/components/marketplace/CartSheet';
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
+  description: string | null;
   price: number;
+  image_url: string | null;
   category: string;
-  inStock: boolean;
+  stock_quantity: number;
 }
-
-interface CartItem extends Product {
-  quantity: number;
-}
-
-const products: Product[] = [
-  { id: 1, name: 'Premium Dog Food', price: 49.99, category: 'Food', inStock: true },
-  { id: 2, name: 'Cat Scratching Post', price: 29.99, category: 'Toys', inStock: true },
-  { id: 3, name: 'Pet Vitamin Supplements', price: 24.99, category: 'Health', inStock: true },
-  { id: 4, name: 'Comfortable Pet Bed', price: 59.99, category: 'Accessories', inStock: false },
-  { id: 5, name: 'Interactive Dog Toy', price: 19.99, category: 'Toys', inStock: true },
-  { id: 6, name: 'Cat Food - Salmon', price: 39.99, category: 'Food', inStock: true },
-];
 
 const Marketplace = () => {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const { initiatePayment, isLoading: isPaymentLoading } = useRazorpay();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { cartItems, cartCount, cartTotal, addToCart, updateQuantity, removeFromCart, clearCart } = useCart();
+  
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [checkingOut, setCheckingOut] = useState(false);
 
-  const addToCart = (product: Product) => {
-    setCart((prevCart) => {
-      const existingItem = prevCart.find((item) => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
-    });
-    toast({
-      title: 'Added to cart',
-      description: `${product.name} has been added to your cart`,
-    });
-  };
+  const categories = ['All', 'Food', 'Accessories', 'Toys', 'Grooming', 'Bedding', 'Travel'];
 
-  const updateQuantity = (productId: number, delta: number) => {
-    setCart((prevCart) =>
-      prevCart
-        .map((item) =>
-          item.id === productId ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
-  };
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
-  const removeFromCart = (productId: number) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
-  };
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-
-  const handleCheckout = () => {
-    if (cart.length === 0) {
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
       toast({
-        title: 'Cart is empty',
-        description: 'Add some items to your cart before checkout',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load products.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         product.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const handleCheckout = async () => {
+    if (!user) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to checkout.",
+        variant: "destructive",
       });
       return;
     }
 
-    initiatePayment({
-      amount: cartTotal,
-      name: 'PetCare Marketplace',
-      description: `${cartItemCount} item(s) - Pet supplies`,
-      notes: {
-        items: cart.map((item) => `${item.name} x${item.quantity}`).join(', '),
-      },
-      onSuccess: () => {
-        setCart([]);
-        setIsCartOpen(false);
-        toast({
-          title: 'Order Placed!',
-          description: 'Your pet supplies will be delivered soon',
-        });
-      },
-    });
+    if (cartItems.length === 0) return;
+
+    setCheckingOut(true);
+
+    try {
+      // Create order
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user.id,
+          total_amount: cartTotal,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      const orderItems = cartItems.map(item => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: item.product.name,
+        product_price: item.product.price,
+        quantity: item.quantity,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      // Update order status to confirmed (simulating payment)
+      await supabase
+        .from('orders')
+        .update({ status: 'confirmed' })
+        .eq('id', order.id);
+
+      // Clear cart
+      await clearCart();
+
+      toast({
+        title: "Order placed successfully!",
+        description: `Your order #${order.id.slice(0, 8)} has been confirmed.`,
+      });
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout failed",
+        description: error.message || "Failed to process your order.",
+        variant: "destructive",
+      });
+    } finally {
+      setCheckingOut(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Marketplace</h1>
-          <p className="text-muted-foreground">Shop pet supplies and essentials</p>
+          <h1 className="text-2xl font-bold text-foreground">Pet Marketplace</h1>
+          <p className="text-muted-foreground">Shop premium products for your pets</p>
         </div>
-        <Button
-          variant="outline"
-          className="relative"
-          onClick={() => setIsCartOpen(!isCartOpen)}
-        >
-          <ShoppingCart className="h-5 w-5" />
-          {cartItemCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {cartItemCount}
-            </span>
-          )}
-        </Button>
+        <CartSheet
+          cartItems={cartItems}
+          cartCount={cartCount}
+          cartTotal={cartTotal}
+          onUpdateQuantity={updateQuantity}
+          onRemove={removeFromCart}
+          onCheckout={handleCheckout}
+          checkingOut={checkingOut}
+        />
       </div>
 
-      {/* Cart Sidebar */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsCartOpen(false)} />
-          <div className="relative bg-card w-full max-w-md h-full overflow-y-auto shadow-xl animate-slide-up">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-foreground">Your Cart</h2>
-                <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)}>
-                  <X className="h-5 w-5" />
-                </Button>
-              </div>
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
 
-              {cart.length === 0 ? (
-                <div className="text-center py-12">
-                  <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Your cart is empty</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4 mb-6">
-                    {cart.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                        <div className="bg-muted rounded-lg p-2">
-                          <Package className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-medium text-foreground">{item.name}</h3>
-                          <p className="text-sm text-primary font-semibold">₹{item.price.toFixed(2)}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, -1)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center font-medium">{item.quantity}</span>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+      {/* Category Tabs */}
+      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+        <TabsList className="flex-wrap h-auto gap-1">
+          {categories.map(category => (
+            <TabsTrigger key={category} value={category} className="text-sm">
+              {category}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
-                  <div className="border-t border-border pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-semibold text-foreground">Total</span>
-                      <span className="text-2xl font-bold text-primary">₹{cartTotal.toFixed(2)}</span>
-                    </div>
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={handleCheckout}
-                      disabled={isPaymentLoading}
-                    >
-                      <CreditCard className="h-5 w-5 mr-2" />
-                      {isPaymentLoading ? 'Processing...' : 'Checkout with Razorpay'}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+      {/* Products Grid */}
+      {filteredProducts.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No products found matching your criteria.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredProducts.map(product => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={addToCart}
+            />
+          ))}
         </div>
       )}
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {products.map((product) => (
-          <div key={product.id} className="bg-card rounded-xl p-6 shadow-card hover:shadow-hover transition-shadow">
-            <div className="aspect-square bg-muted rounded-lg flex items-center justify-center mb-4">
-              <Package className="h-16 w-16 text-muted-foreground/50" />
-            </div>
-            
-            <div className="space-y-2">
-              <span className="text-xs px-2 py-1 bg-accent text-accent-foreground rounded-full">
-                {product.category}
-              </span>
-              <h3 className="font-semibold text-foreground">{product.name}</h3>
-              <p className="text-2xl font-bold text-primary">₹{product.price}</p>
-              
-              <Button 
-                variant={product.inStock ? "default" : "outline"} 
-                className="w-full mt-2"
-                disabled={!product.inStock}
-                onClick={() => product.inStock && addToCart(product)}
-              >
-                {product.inStock ? (
-                  <>
-                    <ShoppingBag className="h-4 w-4 mr-2" />
-                    Add to Cart
-                  </>
-                ) : (
-                  'Out of Stock'
-                )}
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
