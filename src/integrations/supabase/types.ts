@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          amount: number | null
+          appointment_date: string
+          appointment_time: string
+          created_at: string
+          id: string
+          notes: string | null
+          owner_name: string
+          payment_id: string | null
+          pet_name: string
+          pet_owner_id: string
+          reason: string
+          status: string
+          updated_at: string
+          vet_id: string
+          vet_name: string
+        }
+        Insert: {
+          amount?: number | null
+          appointment_date: string
+          appointment_time: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_name: string
+          payment_id?: string | null
+          pet_name: string
+          pet_owner_id: string
+          reason: string
+          status?: string
+          updated_at?: string
+          vet_id: string
+          vet_name: string
+        }
+        Update: {
+          amount?: number | null
+          appointment_date?: string
+          appointment_time?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_name?: string
+          payment_id?: string | null
+          pet_name?: string
+          pet_owner_id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          vet_id?: string
+          vet_name?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string | null
@@ -45,6 +99,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feedback: {
+        Row: {
+          appointment_id: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          pet_owner_id: string
+          rating: number
+          vet_id: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          pet_owner_id: string
+          rating: number
+          vet_id: string
+        }
+        Update: {
+          appointment_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          pet_owner_id?: string
+          rating?: number
+          vet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medical_records: {
+        Row: {
+          created_at: string
+          description: string
+          diagnosis: string | null
+          id: string
+          pet_name: string
+          pet_owner_id: string
+          record_date: string
+          record_type: string
+          treatment: string | null
+          vet_id: string
+          vet_name: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          diagnosis?: string | null
+          id?: string
+          pet_name: string
+          pet_owner_id: string
+          record_date?: string
+          record_type: string
+          treatment?: string | null
+          vet_id: string
+          vet_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          diagnosis?: string | null
+          id?: string
+          pet_name?: string
+          pet_owner_id?: string
+          record_date?: string
+          record_type?: string
+          treatment?: string | null
+          vet_id?: string
+          vet_name?: string
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -121,6 +255,57 @@ export type Database = {
           total_amount?: number
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      prescriptions: {
+        Row: {
+          created_at: string
+          dosage: string
+          end_date: string
+          frequency: string
+          id: string
+          medication: string
+          notes: string | null
+          pet_name: string
+          pet_owner_id: string
+          start_date: string
+          status: string
+          updated_at: string
+          vet_id: string
+          vet_name: string
+        }
+        Insert: {
+          created_at?: string
+          dosage: string
+          end_date: string
+          frequency: string
+          id?: string
+          medication: string
+          notes?: string | null
+          pet_name: string
+          pet_owner_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          vet_id: string
+          vet_name: string
+        }
+        Update: {
+          created_at?: string
+          dosage?: string
+          end_date?: string
+          frequency?: string
+          id?: string
+          medication?: string
+          notes?: string | null
+          pet_name?: string
+          pet_owner_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          vet_id?: string
+          vet_name?: string
         }
         Relationships: []
       }
@@ -216,6 +401,69 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vet_availability: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_enabled: boolean
+          start_time: string
+          vet_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_enabled?: boolean
+          start_time: string
+          vet_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_enabled?: boolean
+          start_time?: string
+          vet_id?: string
+        }
+        Relationships: []
+      }
+      vet_documents: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          document_type: string
+          document_url: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          document_type: string
+          document_url: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          document_type?: string
+          document_url?: string
+          id?: string
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

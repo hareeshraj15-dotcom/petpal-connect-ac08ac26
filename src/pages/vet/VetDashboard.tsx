@@ -1,21 +1,25 @@
 import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
 import VetSidebar from '@/components/VetSidebar';
+import HelpBot from '@/components/HelpBot';
 
 const VetDashboard = () => {
   const navigate = useNavigate();
+  const { user, role, loading } = useAuth();
 
   useEffect(() => {
-    const user = api.getCurrentUser();
+    if (loading) return;
     if (!user) {
       navigate('/login');
       return;
     }
-    if (user.role !== 'VETERINARIAN') {
+    if (role && role !== 'veterinarian') {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [user, role, loading, navigate]);
+
+  if (loading) return null;
 
   return (
     <div className="dashboard-layout flex min-h-screen">
@@ -25,6 +29,7 @@ const VetDashboard = () => {
           <Outlet />
         </div>
       </main>
+      <HelpBot role="veterinarian" />
     </div>
   );
 };
