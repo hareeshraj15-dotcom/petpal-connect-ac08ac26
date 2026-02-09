@@ -20,12 +20,14 @@ import PetOwnerDashboard from "./pages/PetOwnerDashboard";
 import DashboardHome from "./pages/dashboard/DashboardHome";
 import MyPets from "./pages/dashboard/MyPets";
 import HealthRecords from "./pages/dashboard/HealthRecords";
+import MedicalRecords from "./pages/dashboard/MedicalRecords";
 import Appointments from "./pages/dashboard/Appointments";
 import Marketplace from "./pages/dashboard/Marketplace";
 import Orders from "./pages/dashboard/Orders";
 import Messages from "./pages/dashboard/Messages";
 import Profile from "./pages/dashboard/Profile";
 import Settings from "./pages/dashboard/Settings";
+import Prescriptions from "./pages/dashboard/Prescriptions";
 
 // Vet Dashboard
 import VetDashboard from "./pages/vet/VetDashboard";
@@ -37,6 +39,8 @@ import VetPrescriptions from "./pages/vet/VetPrescriptions";
 import VetMessages from "./pages/vet/VetMessages";
 import VetProfile from "./pages/vet/VetProfile";
 import VetAvailability from "./pages/vet/VetAvailability";
+import VetDocuments from "./pages/vet/VetDocuments";
+import VetFeedback from "./pages/vet/VetFeedback";
 
 // Admin Dashboard
 import AdminDashboard from "./pages/AdminDashboard";
@@ -71,12 +75,14 @@ const App = () => (
               <Route index element={<DashboardHome />} />
               <Route path="my-pets" element={<MyPets />} />
               <Route path="health-records" element={<HealthRecords />} />
+              <Route path="medical-records" element={<MedicalRecords />} />
               <Route path="appointments" element={<Appointments />} />
               <Route path="marketplace" element={<Marketplace />} />
               <Route path="orders" element={<Orders />} />
               <Route path="messages" element={<Messages />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="prescriptions" element={<Prescriptions />} />
             </Route>
 
             {/* Veterinarian Dashboard */}
@@ -89,6 +95,8 @@ const App = () => (
               <Route path="messages" element={<VetMessages />} />
               <Route path="profile" element={<VetProfile />} />
               <Route path="availability" element={<VetAvailability />} />
+              <Route path="documents" element={<VetDocuments />} />
+              <Route path="feedback" element={<VetFeedback />} />
             </Route>
 
             {/* Admin Dashboard */}

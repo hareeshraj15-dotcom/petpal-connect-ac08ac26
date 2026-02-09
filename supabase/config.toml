@@ -2,3 +2,6 @@ project_id = "dldkwqxvgbkaecixmsmb"
 
 [functions.create-razorpay-order]
 verify_jwt = false
+
+[functions.pet-helpbot]
+verify_jwt = false
